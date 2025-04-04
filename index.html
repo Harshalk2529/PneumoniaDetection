@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pneumonia Detection Dashboard</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f6f7; /* Light gray background */
+            color: #333;
+        }
+
+        h1 {
+            color: #2c3e50; /* Darker blue-gray */
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #34495e; /* Slightly lighter blue-gray */
+            margin-bottom: 10px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto; /* Center horizontally */
+            background: white; /* White background for the container */
+            padding: 20px;
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        }
+
+        div {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold; /* Bold labels */
+        }
+
+        input[type="file"] {
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #3498db; /* Light blue */
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s; /* Smooth transition */
+        }
+
+        button:hover {
+            background-color: #2980b9; /* Darker blue */
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #e0e0e0; /* Light gray border */
+            border-radius: 5px;
+            background-color: #f0f8ff; /* Light aliceblue background */
+            color: #333;
+            font-weight: bold; /* Bold result text */
+        }
+
+        #imagePreview {
+            display: none;
+            max-width: 100%; /* Responsive image */
+            margin: 10px auto; /* Center the image */
+            border: 1px solid #e0e0e0; /* Light gray border */
+            border-radius: 5px; /* Rounded corners */
+        }
+
+        /* Responsive design */
+        @media (max-width: 600px) {
+            button {
+                width: 100%; /* Full width buttons on small screens */
+                margin: 5px 0; /* Margin for spacing */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pneumonia Detection</h1>
+
+        <div>
+            <h2>Symptoms</h2>
+            <label><input type="checkbox" id="cough" /> Cough</label>
+            <label><input type="checkbox" id="fever" /> Fever</label>
+            <label><input type="checkbox" id="sputum" /> Sputum</label>
+        </div>
+
+        <div>
+            <h2>Upload X-ray Image</h2>
+            <input type="file" id="imageInput" accept="image/*" />
+            <img id="imagePreview" />
+        </div>
+
+        <button onclick="predictCNN()">Check CNN Prediction</button>
+        <button onclick="predictHybrid()">Check Hybrid Prediction</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById("imageInput");
+        const imagePreview = document.getElementById("imagePreview");
+
+        imageInput.addEventListener("change", function () {
+            const file = imageInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = "block";
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        async function predictCNN() {
+            const image = imagePreview.src.split(",")[1];
+            const response = await fetch("/predict_cnn", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: image }),
+            });
+            const data = await response.json();
+            document.getElementById("result").textContent =
+                "CNN Prediction: " + data.prediction;
+        }
+
+        async function predictHybrid() {
+            const image = imagePreview.src.split(",")[1];
+            const cough = document.getElementById("cough").checked ? 1 : 0;
+            const fever = document.getElementById("fever").checked ? 1 : 0;
+            const sputum = document.getElementById("sputum").checked ? 1 : 0;
+            const symptoms = [cough, fever, sputum];
+            const response = await fetch("/predict_hybrid", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: image, symptoms: symptoms }),
+            });
+            const data = await response.json();
+            document.getElementById("result").textContent =
+                "Hybrid Prediction: " + data.prediction;
+        }
+    </script>
+</body>
+</html>
